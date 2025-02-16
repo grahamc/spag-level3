@@ -1,0 +1,22 @@
+on:
+  release:
+    types:
+      - released
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  deploy:
+    uses: DeterminateSystems/ci/.github/workflows/workflow.yml@main
+    permissions:
+      id-token: "write"
+      contents: "read"
+    with:
+      visibility: private
+  finish:
+    environment: production
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - run: true

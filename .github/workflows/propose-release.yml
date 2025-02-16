@@ -1,0 +1,41 @@
+on:
+  workflow_dispatch:
+    inputs:
+      idempotencyKey:
+        type: string
+        default: ""
+      version:
+        type: string
+        required: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: "write"
+      contents: "write"
+      pull-requests: write
+    env:
+      VERSION: ${{ inputs.version }}
+      GIT_COMMITTER_NAME: Determinator
+      GIT_COMMITTER_EMAIL: infrastructure+${{ inputs.idempotencyKey }}@determinate.systems
+      GIT_AUTHOR_NAME: Determinator
+      GIT_AUTHOR_EMAIL: infrastructure+${{ inputs.idempotencyKey }}@determinate.systems
+    steps:
+      - name: idem/${{ inputs.idempotencyKey }} for ${{ inputs.version }}
+        run: true
+      - uses: actions/checkout@v4.1.1
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          determinate: true
+      - uses: DeterminateSystems/flakehub-cache-action@main
+      - run: nix develop --command ./prepare-release.sh "$VERSION"
+        env:
+          VERSION: ${{ inputs.version }}
+      - uses: peter-evans/create-pull-request@v7
+        id: pr
+        with:
+          branch: release-v${{ inputs.version }}/${{ inputs.idempotencyKey }}
+          sign-commits: true
+          title: Release v${{ inputs.version }}
+          body: |
+            v${{ inputs.version }} (${{ inputs.idempotencyKey }})
